@@ -1,0 +1,64 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Prepare web assets
+        run: |
+          mkdir -p app/www
+          cp index.html manifest.webmanifest icon.svg icon-192.png icon-512.png sw.js app/www/
+
+      - name: Create Capacitor Android project
+        working-directory: app
+        run: |
+          npm init -y >/dev/null
+          npm install @capacitor/core@6.2.0 @capacitor/cli@6.2.0 @capacitor/android@6.2.0
+          npx cap init "رفيق التخدير" com.ahmedatif.rafiq --web-dir www
+          npx cap add android
+          npx cap sync android
+
+      - name: App icon
+        working-directory: app/android/app/src/main/res
+        run: |
+          rm -rf mipmap-anydpi-v26
+          for d in mipmap-*; do
+            cp ../../../../../../icon-192.png "$d/ic_launcher.png"
+            cp ../../../../../../icon-192.png "$d/ic_launcher_round.png"
+            rm -f "$d/ic_launcher_foreground.png"
+          done
+
+      - name: Build APK
+        working-directory: app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk ../../rafiq-altakhdir.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: رفيق التخدير v${{ github.run_number }}
+          body: ملف APK للتثبيت على أندرويد. أداة مساعدة للقرار ولا تغني عن الحكم السريري.
+          files: rafiq-altakhdir.apk
+          make_latest: true
