@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f6b5c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="رفيق التخدير">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}</style>
+<title>رفيق التخدير</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Noto+Kufi+Arabic:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column clinical sheet. Patient strip on top, then four drug sections, each a table whose rows carry the ISO 26825 syringe-label colour of the drug class. */
+:root{
+  --bg:#f3f6f6; --panel:#ffffff; --fg:#13222a; --muted:#5b6b72; --line:#d8e1e3;
+  --accent:#0f6b5c; --accent-soft:#e2f0ec; --warn:#a14a00; --warn-soft:#fff1e2; --danger:#b3261e;
+  --iso-yellow:#f5c400; --iso-orange:#f28c28; --iso-red:#ff3b3b; --iso-blue:#2f7fd1;
+  --iso-violet:#9157c0; --iso-grey:#9aa3a8; --iso-green:#3c9f55; --iso-salmon:#f39d84; --stripe:#ffffff;
+  --f-display:"Noto Kufi Arabic","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --f-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1518; --panel:#152126; --fg:#e2ebee; --muted:#93a5ac; --line:#26363c;
+  --accent:#4cc3a8; --accent-soft:#183a33; --warn:#ffb36b; --warn-soft:#3a2614; --danger:#ff8a80; --stripe:#152126; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1518; --panel:#152126; --fg:#e2ebee; --muted:#93a5ac; --line:#26363c;
+  --accent:#4cc3a8; --accent-soft:#183a33; --warn:#ffb36b; --warn-soft:#3a2614; --danger:#ff8a80; --stripe:#152126; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6}
+.wrap{max-width:1040px;margin:0 auto;padding-block:24px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+h1,h2{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:1.75rem;line-height:1.3}
+h2{font-size:1.15rem}
+header p{margin:6px 0 0;color:var(--muted);max-width:65ch}
+.note{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 14px;font-size:.88rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.panel-head small{color:var(--muted)}
+.inputs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.inputs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+label{display:flex;flex-direction:column;gap:4px;font-size:.82rem;color:var(--muted);font-weight:500}
+input,select{font:inherit;font-family:var(--f-num);font-size:1rem;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;min-width:0}
+select{font-family:var(--f-body)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.weights{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border-radius:8px;overflow:hidden}
+@media (max-width:640px){.weights{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.w{background:var(--accent-soft);padding:10px 12px;display:flex;flex-direction:column}
+.w b{font-family:var(--f-num);font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
+.w span{font-size:.78rem;color:var(--muted)}
+.w em{font-style:normal;font-family:var(--f-num);font-size:.72rem;letter-spacing:.04em;color:var(--accent)}
+.flags{display:flex;flex-wrap:wrap;gap:8px}
+.flag{font-size:.82rem;padding:4px 10px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
+.flag.ok{background:var(--accent-soft);color:var(--accent)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:.92rem}
+th{font-size:.76rem;color:var(--muted);font-weight:500;text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);letter-spacing:.02em}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.drug{display:flex;gap:10px;align-items:flex-start}
+.chip{flex:none;width:10px;height:30px;border-radius:2px;margin-top:2px;border:1px solid rgba(0,0,0,.12)}
+.dn{font-family:var(--f-num);font-weight:600;direction:ltr;unicode-bidi:isolate}
+.dn small{display:block;font-family:var(--f-body);font-weight:400;color:var(--muted);direction:rtl;font-size:.78rem}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+.res{font-family:var(--f-num);font-weight:600;font-size:1.02rem;color:var(--accent);direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+.ws{font-family:var(--f-num);font-size:.75rem;padding:2px 6px;border-radius:4px;background:var(--bg);border:1px solid var(--line);white-space:nowrap}
+.ws.obese{border-color:var(--accent);color:var(--accent)}
+.cmt{color:var(--muted);font-size:.84rem}
+.yellow{background:var(--iso-yellow)} .orange{background:var(--iso-orange)} .red{background:var(--iso-red)}
+.blue{background:var(--iso-blue)} .violet{background:var(--iso-violet)} .grey{background:var(--iso-grey)}
+.green{background:var(--iso-green)} .salmon{background:var(--iso-salmon)}
+.red-s{background:repeating-linear-gradient(135deg,var(--iso-red) 0 4px,var(--stripe) 4px 7px)}
+.row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end}
+@media (max-width:640px){.row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.out{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.out{grid-template-columns:1fr}}
+.big{border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.big span{font-size:.8rem;color:var(--muted)}
+.big b{font-family:var(--f-num);font-size:1.5rem;font-weight:600;color:var(--accent);direction:ltr;text-align:right;font-variant-numeric:tabular-nums}
+.big small{color:var(--muted);font-size:.8rem}
+.lipid{border-inline-start:4px solid var(--danger);background:var(--bg);border-radius:6px;padding:12px 14px;font-size:.9rem}
+.lipid h3{margin:0 0 6px;font-size:.95rem;color:var(--danger);font-family:var(--f-display)}
+.lipid ol{margin:0;padding-inline-start:20px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.78rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:14px;border-radius:2px;vertical-align:-2px;margin-inline-end:5px;border:1px solid rgba(0,0,0,.12)}
+@media (max-width:640px){
+  .w:last-child{grid-column:1/-1}
+  table{min-width:0}
+  thead{display:none}
+  tr{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+  tr:last-child{border-bottom:0}
+  td{border:0;padding:0}
+  td:nth-child(1){grid-column:1}
+  td:nth-child(4){grid-column:2;grid-row:1;text-align:left}
+  td:nth-child(2),td:nth-child(3){grid-column:auto;font-size:.82rem}
+  td:nth-child(5){grid-column:1/-1}
+}
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px}
+.tabs a{text-align:center;padding:10px 6px;border-radius:7px;color:var(--muted);text-decoration:none;font-weight:600;font-family:var(--f-display);font-size:.95rem}
+.tabs a{display:flex;flex-direction:column;align-items:center;gap:2px}
+.tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:640px){
+  .tabs{position:fixed;top:auto;bottom:0;left:0;right:0;border-radius:0;border:0;border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));box-shadow:0 -4px 16px rgba(0,0,0,.06)}
+  .tabs a{font-size:.78rem;padding:6px 4px}
+  .tabs a[aria-selected="true"][href]{background:transparent;color:var(--accent)}
+  .wrap{padding-block:16px 110px}
+}
+.tabs a[aria-selected="true"]{background:var(--accent);color:var(--panel)}
+.view{display:flex;flex-direction:column;gap:22px}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:start;border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt input{width:auto;margin-top:5px}
+.opt b{font-family:var(--f-num)}
+.opt span{grid-column:2;color:var(--muted);font-size:.85rem}
+.checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+@media (max-width:640px){.checks{grid-template-columns:1fr}}
+.chk{flex-direction:row;align-items:flex-start;gap:10px;color:var(--fg);font-size:.92rem;font-weight:400;border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+.chk:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.chk input{width:auto;margin-top:5px;flex:none}
+.score{font-family:var(--f-num);font-size:1.3rem;color:var(--accent)}
+button{font:inherit;font-weight:600;background:var(--accent);color:var(--panel);border:0;border-radius:7px;padding:8px 14px;cursor:pointer}
+pre{margin:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;font-family:var(--f-num);font-size:.85rem;white-space:pre-wrap;text-align:left}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.cards{grid-template-columns:1fr}}
+details.card{background:var(--panel);border:1px solid var(--line);border-inline-start:5px solid var(--danger);border-radius:10px;padding:0;min-width:0}
+details.card summary{cursor:pointer;padding:14px 16px;font-family:var(--f-display);font-weight:700;font-size:1.02rem;list-style:none;display:flex;justify-content:space-between;gap:10px}
+details.card summary::-webkit-details-marker{display:none}
+details.card summary small{font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:.8rem}
+details.card[open] summary{border-bottom:1px solid var(--line)}
+details.card ol{margin:0;padding:12px 16px 14px;padding-inline-start:34px;display:flex;flex-direction:column;gap:6px;font-size:.92rem}
+.dose{font-family:var(--f-num);font-weight:600;color:var(--accent);direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+.src{padding:0 16px 12px;color:var(--muted);font-size:.78rem}
+footer{color:var(--muted);font-size:.82rem;display:flex;flex-direction:column;gap:6px}
+footer ul{margin:0;padding-inline-start:18px}
+footer a{color:var(--accent)}
+</style>
+
+</head>
+<body>
+<div class="wrap" dir="rtl" lang="ar">
+<header>
+  <h1>رفيق التخدير</h1>
+  <p>تطبيقك الشخصي في غرفة العمليات للبالغين. أدخل بيانات المريض مرة واحدة فتُحسب الجرعات والتقييم وبطاقات الطوارئ على وزنه.</p>
+</header>
+
+<div class="note">أداة مساعدة للقرار ولا تغني عن الحكم السريري أو بروتوكول المستشفى. راجع كل جرعة قبل الإعطاء، وعدّلها حسب العمر والحالة الدموية وأمراض الكبد والكلى والقلب.</div>
+
+<section class="panel" aria-labelledby="pt">
+  <div class="panel-head"><h2 id="pt">بيانات المريض</h2><small>القيم الحالية مثال فقط</small></div>
+  <div class="inputs">
+    <label for="age">العمر (سنة)<input id="age" type="number" inputmode="decimal" min="0" max="120" value="45"></label>
+    <label for="sex">الجنس<select id="sex"><option value="m" selected>ذكر</option><option value="f">أنثى</option></select></label>
+    <label for="ht">الطول (cm)<input id="ht" type="number" inputmode="decimal" min="100" max="230" value="175"></label>
+    <label for="wt">الوزن الفعلي (kg)<input id="wt" type="number" inputmode="decimal" min="20" max="300" value="110"></label>
+  </div>
+  <div class="weights">
+    <div class="w"><em>TBW</em><b id="o-tbw">–</b><span>الوزن الفعلي</span></div>
+    <div class="w"><em>IBW</em><b id="o-ibw">–</b><span>الوزن المثالي (Devine)</span></div>
+    <div class="w"><em>LBW</em><b id="o-lbw">–</b><span>الوزن الصافي (Janmahasatian)</span></div>
+    <div class="w"><em>ABW</em><b id="o-abw">–</b><span>المعدّل IBW + 0.4 × الفرق</span></div>
+    <div class="w"><em>BMI</em><b id="o-bmi">–</b><span>kg/m²</span></div>
+  </div>
+  <div class="flags" id="flags"></div>
+</section>
+
+<nav class="tabs" role="tablist" aria-label="أقسام التطبيق">
+  <a href="#crisis" role="tab" data-tab="crisis"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></svg><span>الطوارئ</span></a>
+  <a href="#doses" role="tab" data-tab="doses"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 2 4 4M17 7l3-3M19 9 9 19l-4 1 1-4L16 6l3 3zM14 8l2 2M11 11l2 2"/></svg><span>الجرعات</span></a>
+  <a href="#preop" role="tab" data-tab="preop"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h3"/></svg><span>قبل التخدير</span></a>
+</nav>
+
+<div data-view="doses" class="view">
+
+<section class="panel" aria-labelledby="ind">
+  <div class="panel-head"><h2 id="ind">التحريض والمسكنات الأفيونية</h2><small>جرعة وريدية مفردة</small></div>
+  <div class="tbl"><table><thead><tr><th>الدواء</th><th>الجرعة لكل kg</th><th>الوزن المعتمد</th><th>الجرعة المحسوبة</th><th>ملاحظات</th></tr></thead><tbody id="t-ind"></tbody></table></div>
+</section>
+
+<section class="panel" aria-labelledby="nmb">
+  <div class="panel-head"><h2 id="nmb">مرخيات العضلات وعكسها</h2><small>Rocuronium وSuxamethonium والسوغامادكس</small></div>
+  <div class="tbl"><table><thead><tr><th>الدواء</th><th>الجرعة لكل kg</th><th>الوزن المعتمد</th><th>الجرعة المحسوبة</th><th>ملاحظات</th></tr></thead><tbody id="t-nmb"></tbody></table></div>
+</section>
+
+<section class="panel" aria-labelledby="la">
+  <div class="panel-head"><h2 id="la">الحد الأقصى للمخدر الموضعي</h2><small>حقنة مفردة</small></div>
+  <div class="row">
+    <label for="la-drug">الدواء<select id="la-drug"></select></label>
+    <label for="la-epi">الأدرينالين<select id="la-epi"><option value="0">بدون</option><option value="1">مع أدرينالين 1:200,000</option></select></label>
+    <label for="la-conc">التركيز (%)<select id="la-conc"></select></label>
+    <label for="la-vol">الحجم المخطط (mL)<input id="la-vol" type="number" inputmode="decimal" min="0" value="30"></label>
+  </div>
+  <div class="out">
+    <div class="big"><span>الحد الأقصى (mg)</span><b id="la-mg">–</b><small id="la-rule">–</small></div>
+    <div class="big"><span>الحد الأقصى بالحجم (mL)</span><b id="la-ml">–</b><small id="la-mgml">–</small></div>
+    <div class="big"><span>الحجم المخطط يساوي</span><b id="la-plan">–</b><small id="la-pct">–</small></div>
+  </div>
+  <p class="cmt" style="margin:0">قلّل الجرعة عند كبار السن والحوامل وفشل القلب أو الكبد، وفي الإحصار عالي الامتصاص (بين الأضلاع، الحقن حول القصبة). الجرعات الإجمالية تتراكم عند استخدام أكثر من مخدر موضعي.</p>
+  <div class="lipid">
+    <h3>تسمم المخدر الموضعي (LAST): مستحلب الدهون 20%</h3>
+    <ol id="lipid"></ol>
+  </div>
+</section>
+
+<section class="panel" aria-labelledby="inf">
+  <div class="panel-head"><h2 id="inf">التسريب المستمر</h2><small>تحويل الجرعة إلى mL/h</small></div>
+  <div class="row">
+    <label for="i-drug">الدواء<select id="i-drug"></select></label>
+    <label for="i-conc">التركيز<input id="i-conc" type="number" inputmode="decimal" min="0" step="any"></label>
+    <label for="i-dose">الجرعة<input id="i-dose" type="number" inputmode="decimal" min="0" step="any"></label>
+    <label for="i-w">الوزن المعتمد<select id="i-w"><option value="auto">تلقائي</option><option value="tbw">TBW</option><option value="ibw">IBW</option><option value="lbw">LBW</option><option value="abw">ABW</option></select></label>
+  </div>
+  <div class="out">
+    <div class="big"><span>سرعة المضخة</span><b id="i-rate">–</b><small id="i-units">–</small></div>
+    <div class="big"><span>المدى المعتاد</span><b id="i-range">–</b><small id="i-rrate">–</small></div>
+    <div class="big"><span>التحضير المفترض</span><b id="i-prep" style="font-size:1.05rem">–</b><small id="i-wused">–</small></div>
+  </div>
+</section>
+
+<div class="legend" aria-label="ألوان ملصقات المحاقن ISO 26825">
+  <span><i class="yellow"></i>منوّمات التحريض</span><span><i class="orange"></i>بنزوديازبينات</span><span><i class="blue"></i>أفيونات</span>
+  <span><i class="red"></i>مرخيات العضلات</span><span><i class="red-s"></i>عاكسات الإرخاء</span><span><i class="green"></i>مضادات الكولين</span>
+  <span><i class="violet"></i>رافعات الضغط</span><span><i class="grey"></i>مخدر موضعي</span>
+</div>
+
+</div>
+
+<div data-view="preop" class="view" id="view-preop" hidden>
+<section class="panel" aria-labelledby="asa">
+  <div class="panel-head"><h2 id="asa">التصنيف الجسدي ASA</h2><small>ASA Physical Status، تحديث 2020</small></div>
+  <div class="opts" id="asa-opts"></div>
+  <label class="chk"><input type="checkbox" id="asa-e"> عملية طارئة (يضاف الحرف E)</label>
+</section>
+<section class="panel" aria-labelledby="rcri">
+  <div class="panel-head"><h2 id="rcri">مؤشر المخاطر القلبية المعدّل RCRI</h2><b class="score" id="rcri-out">–</b></div>
+  <div class="checks" id="rcri-list"></div>
+  <p class="cmt" id="rcri-txt" style="margin:0"></p>
+</section>
+<section class="panel" aria-labelledby="sb">
+  <div class="panel-head"><h2 id="sb">STOP-BANG لانقطاع النفس الانسدادي</h2><b class="score" id="sb-out">–</b></div>
+  <div class="checks" id="sb-list"></div>
+  <p class="cmt" id="sb-txt" style="margin:0"></p>
+</section>
+<section class="panel" aria-labelledby="apf">
+  <div class="panel-head"><h2 id="apf">خطر الغثيان والقيء بعد العملية (Apfel)</h2><b class="score" id="apf-out">–</b></div>
+  <div class="checks" id="apf-list"></div>
+  <p class="cmt" id="apf-txt" style="margin:0"></p>
+</section>
+<section class="panel" aria-labelledby="fc">
+  <div class="panel-head"><h2 id="fc">القدرة الوظيفية</h2></div>
+  <label class="chk"><input type="checkbox" id="mets" checked> يصعد طابقين من الدرج أو يمشي صعوداً دون توقف (4 METs أو أكثر)</label>
+</section>
+<section class="panel" aria-labelledby="sum">
+  <div class="panel-head"><h2 id="sum">ملخص للملف</h2><button type="button" id="copy">نسخ الملخص</button></div>
+  <pre id="summary" dir="ltr"></pre>
+</section>
+</div>
+
+<div data-view="crisis" class="view" hidden>
+<p class="cmt" style="margin:0">الجرعات محسوبة على وزن المريض أعلاه. أول خطوة في كل أزمة: اطلب المساعدة وأعلن الأزمة بصوت واضح، وأعطِ أكسجين 100%.</p>
+<div class="cards" id="cards"></div>
+</div>
+
+<footer>
+  <div>المراجع المعتمدة في القيم (يُرجى التحقق من الإصدار الأحدث ومن نشرة الدواء المحلية):</div>
+  <ul>
+    <li>Society for Obesity and Bariatric Anaesthesia (SOBA) ونشرات الأدوية الرسمية: اختيار الوزن الدوائي عند السمنة.</li>
+    <li>ASRA Practice Advisory on Local Anesthetic Systemic Toxicity (2020): مستحلب الدهون والحد الأقصى للمخدر الموضعي.</li>
+    <li>نشرة Sugammadex (Bridion): 2 و4 و16 mg/kg حسب عمق الإرخاء، على الوزن الفعلي.</li>
+    <li>Devine (1974) لـ IBW، وJanmahasatian (2005) لـ LBW.</li>
+    <li>ASA Physical Status Classification (2020)، وDuceppe وآخرون CCS 2017 لـ RCRI، وChung لـ STOP-BANG، وApfel (1999) للغثيان.</li>
+    <li>بطاقات الطوارئ: MHAUS، AAGBI/NAP6، ASRA 2020، Difficult Airway Society 2015، ESAIC 2023.</li>
+  </ul>
+  <div>الإصدار 2 (6 نوفمبر 2026): أُضيف التقييم قبل التخدير وبطاقات الطوارئ. الأقسام القادمة: المجرى الهوائي الصعب، الصيام ومضادات التخثر.</div>
+  <ul hidden>
+  </ul>
+</footer>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const W={tbw:'TBW',ibw:'IBW',lbw:'LBW',abw:'ABW'};
+
+// dose: [low, high] per kg; unit; obese: weight scalar when BMI >= 30
+const IND=[
+ {n:'Propofol',ar:'بروبوفول',c:'yellow',lo:1.5,hi:2.5,u:'mg',ob:'lbw',note:'كبار السن أو ASA III–IV: 1–1.5 mg/kg وبحقن بطيء.'},
+ {n:'Ketamine',ar:'كيتامين',c:'yellow',lo:1,hi:2,u:'mg',ob:'lbw',note:'مناسب مع عدم الاستقرار الدموي والربو. التسكين: 0.1–0.3 mg/kg.'},
+ {n:'Etomidate',ar:'إيتوميدات',c:'yellow',lo:0.2,hi:0.3,u:'mg',ob:'lbw',note:'استقرار دموي جيد. يثبط الكورتيزول مؤقتاً.'},
+ {n:'Thiopental',ar:'ثيوبنتال',c:'yellow',lo:3,hi:5,u:'mg',ob:'lbw',note:'خفّض الجرعة عند نقص الحجم.'},
+ {n:'Midazolam',ar:'ميدازولام',c:'orange',lo:0.02,hi:0.05,u:'mg',ob:'lbw',note:'تهدئة أو تحريض مشترك. كبار السن: ابدأ بـ 0.5–1 mg.'},
+ {n:'Fentanyl',ar:'فنتانيل',c:'blue',lo:1,hi:3,u:'mcg',ob:'lbw',note:'للتحريض. خفّض عند كبار السن.'},
+ {n:'Remifentanil',ar:'ريميفنتانيل (بلعة)',c:'blue',lo:0.5,hi:1,u:'mcg',ob:'lbw',note:'على 30–60 ثانية. خطر تيبس الصدر وبطء القلب.'},
+ {n:'Morphine',ar:'مورفين',c:'blue',lo:0.05,hi:0.1,u:'mg',ob:'ibw',note:'حذر عند القصور الكلوي.'}
+];
+const NMB=[
+ {n:'Rocuronium',ar:'روكورونيوم: تنبيب روتيني',c:'red',lo:0.6,hi:0.6,u:'mg',ob:'ibw',note:'مدة سريرية 30–40 دقيقة تقريباً.'},
+ {n:'Rocuronium',ar:'روكورونيوم: تحريض سريع RSI',c:'red',lo:1.2,hi:1.2,u:'mg',ob:'ibw',note:'تأكد من توفر سوغامادكس 16 mg/kg.'},
+ {n:'Suxamethonium',ar:'سكسينيل كولين',c:'red',lo:1,hi:1.5,u:'mg',ob:'tbw',note:'ممنوع مع فرط البوتاسيوم، الحروق والإصابات العصبية بعد 24–48 ساعة، وتاريخ فرط الحرارة الخبيث.'},
+ {n:'Cisatracurium',ar:'سيزاتراكوريوم',c:'red',lo:0.15,hi:0.2,u:'mg',ob:'ibw',note:'تحلل هوفمان: مناسب لقصور الكبد والكلى.'},
+ {n:'Atracurium',ar:'أتراكوريوم',c:'red',lo:0.5,hi:0.5,u:'mg',ob:'ibw',note:'قد يحرر الهيستامين.'},
+ {n:'Vecuronium',ar:'فيكورونيوم',c:'red',lo:0.08,hi:0.1,u:'mg',ob:'ibw',note:''},
+ {n:'Sugammadex',ar:'سوغامادكس: إرخاء متوسط',c:'red-s',lo:2,hi:2,u:'mg',ob:'tbw',note:'عند ظهور نبضتين أو أكثر في TOF.'},
+ {n:'Sugammadex',ar:'سوغامادكس: إرخاء عميق',c:'red-s',lo:4,hi:4,u:'mg',ob:'tbw',note:'عند 1–2 في عدّ ما بعد التكزز (PTC).'},
+ {n:'Sugammadex',ar:'سوغامادكس: عكس فوري',c:'red-s',lo:16,hi:16,u:'mg',ob:'tbw',note:'بعد 1.2 mg/kg روكورونيوم. يعكس الأمينوستيرويدات فقط.'},
+ {n:'Neostigmine',ar:'نيوستيغمين',c:'red-s',lo:0.04,hi:0.07,u:'mg',ob:'ibw',max:5,note:'بعد عودة 4 نبضات في TOF مع ارتداد. الحد الأقصى 5 mg.'},
+ {n:'Glycopyrrolate',ar:'غليكوبيرولات مع النيوستيغمين',c:'green',special:'glyco',u:'mg',note:'0.2 mg لكل 1 mg نيوستيغمين.'}
+];
+const LA={
+ lido:{n:'Lidocaine',plain:[4.5,300],epi:[7,500],conc:[0.5,1,1.5,2]},
+ bupi:{n:'Bupivacaine',plain:[2.5,175],epi:[3,225],conc:[0.25,0.375,0.5]},
+ levo:{n:'Levobupivacaine',plain:[2.5,150],epi:[2.5,150],conc:[0.25,0.375,0.5]},
+ ropi:{n:'Ropivacaine',plain:[3,225],epi:[3,225],conc:[0.2,0.375,0.5,0.75]},
+ prilo:{n:'Prilocaine',plain:[6,400],epi:[8,600],conc:[0.5,1,2]}
+};
+// conc in [unit]/mL; dose unit per kg per min or h
+const INF={
+ nor:{n:'Norepinephrine',ar:'نورأدرينالين',du:'mcg',per:'min',conc:80,cu:'mcg',prep:'4 mg في 50 mL',lo:0.05,hi:0.5,dose:0.1,ob:'tbw'},
+ epi:{n:'Epinephrine',ar:'أدرينالين',du:'mcg',per:'min',conc:20,cu:'mcg',prep:'1 mg في 50 mL',lo:0.02,hi:0.3,dose:0.05,ob:'tbw'},
+ phe:{n:'Phenylephrine',ar:'فينيليفرين',du:'mcg',per:'min',conc:100,cu:'mcg',prep:'5 mg في 50 mL',lo:0.1,hi:1,dose:0.3,ob:'tbw'},
+ prop:{n:'Propofol (TIVA)',ar:'بروبوفول',du:'mg',per:'h',conc:10,cu:'mg',prep:'1% غير مخفف',lo:4,hi:10,dose:6,ob:'abw'},
+ remi:{n:'Remifentanil',ar:'ريميفنتانيل',du:'mcg',per:'min',conc:50,cu:'mcg',prep:'1 mg في 20 mL',lo:0.05,hi:0.25,dose:0.1,ob:'lbw'},
+ dex:{n:'Dexmedetomidine',ar:'ديكسميديتوميدين',du:'mcg',per:'h',conc:4,cu:'mcg',prep:'200 mcg في 50 mL',lo:0.2,hi:0.7,dose:0.4,ob:'abw'}
+};
+
+let P={};
+const num=id=>parseFloat($(id).value);
+function fmt(x,d){if(!isFinite(x))return '–';if(d===undefined)d=x>=100?0:x>=10?1:2;return (+x.toFixed(d)).toLocaleString('en-US',{maximumFractionDigits:d});}
+
+function weights(){
+  const age=num('age'),sex=$('sex').value,h=num('ht'),w=num('wt');
+  const ok=h>0&&w>0;
+  const bmi=ok?w/Math.pow(h/100,2):NaN;
+  const ibw=ok?(sex==='m'?50:45.5)+0.9055*(h-152.4):NaN; // 2.3 kg per inch over 5 ft
+  const lbw=ok?(sex==='m'?9270*w/(6680+216*bmi):9270*w/(8780+244*bmi)):NaN;
+  const abw=ok?(w>ibw?ibw+0.4*(w-ibw):w):NaN;
+  P={age,sex,h,tbw:w,ibw,lbw,abw,bmi,obese:bmi>=30};
+  $('o-tbw').textContent=fmt(w,1);$('o-ibw').textContent=fmt(ibw,1);$('o-lbw').textContent=fmt(lbw,1);
+  $('o-abw').textContent=fmt(abw,1);$('o-bmi').textContent=fmt(bmi,1);
+  const f=[];
+  if(P.obese)f.push(['السمنة BMI ≥ 30: تُستخدم أوزان مختلفة لكل دواء كما في عمود الوزن المعتمد.','']);
+  else f.push(['BMI أقل من 30: تُحسب الجرعات على الوزن الفعلي.','ok']);
+  if(age<16)f.push(['العمر أقل من 16: هذه الحاسبة للبالغين، استخدم مرجع جرعات الأطفال.','']);
+  if(age>=65)f.push(['العمر 65 أو أكثر: خفّض جرعات المنومات والأفيونات وأعطها ببطء.','']);
+  if(h<152.4)f.push(['الطول أقل من 152 cm: معادلة IBW أقل دقة.','']);
+  if(bmi>=40)f.push(['BMI ≥ 40: راجع SOBA وخطة المجرى الهوائي والوضعية المرتفعة.','']);
+  $('flags').innerHTML=f.map(x=>'<span class="flag '+x[1]+'">'+x[0]+'</span>').join('');
+}
+function scalar(ob){return P.obese?ob:'tbw';}
+function rows(list,el){
+  let neoHi=NaN,neoLo=NaN;
+  $(el).innerHTML=list.map(d=>{
+    if(d.special==='glyco'){
+      return tr(d,'<span class="num">0.2 mg / 1 mg</span>','<span class="ws">—</span>','<span class="res">'+fmt(neoLo*0.2,2)+' – '+fmt(neoHi*0.2,2)+' mg</span>');
+    }
+    const k=scalar(d.ob),wt=P[k];
+    let lo=d.lo*wt,hi=d.hi*wt,cap='';
+    if(d.max){if(hi>d.max){cap=' (سقف '+d.max+' mg)';}lo=Math.min(lo,d.max);hi=Math.min(hi,d.max);}
+    if(d.n==='Neostigmine'){neoLo=lo;neoHi=hi;}
+    const per=d.lo===d.hi?fmt(d.lo):fmt(d.lo)+' – '+fmt(d.hi);
+    const res=d.lo===d.hi?fmt(lo):fmt(lo)+' – '+fmt(hi);
+    return tr(d,'<span class="num">'+per+' '+d.u+'/kg</span>','<span class="ws'+(k!=='tbw'?' obese':'')+'">'+W[k]+' '+fmt(wt,1)+'</span>','<span class="res">'+res+' '+d.u+'</span>'+(cap?'<div class="cmt">'+cap+'</div>':''));
+  }).join('');
+}
+function tr(d,per,ws,res){
+  return '<tr><td><div class="drug"><span class="chip '+d.c+'"></span><span class="dn">'+d.n+'<small>'+d.ar+'</small></span></div></td><td>'+per+'</td><td>'+ws+'</td><td>'+res+'</td><td class="cmt">'+d.note+'</td></tr>';
+}
+
+function laInit(){
+  $('la-drug').innerHTML=Object.keys(LA).map(k=>'<option value="'+k+'">'+LA[k].n+'</option>').join('');
+  $('la-drug').value='ropi';laConc();
+}
+function laConc(){
+  const d=LA[$('la-drug').value],cur=parseFloat($('la-conc').value);
+  $('la-conc').innerHTML=d.conc.map(c=>'<option value="'+c+'">'+c+'%</option>').join('');
+  $('la-conc').value=d.conc.includes(cur)?cur:d.conc[Math.min(1,d.conc.length-1)];
+}
+function la(){
+  const d=LA[$('la-drug').value],epi=$('la-epi').value==='1',r=epi?d.epi:d.plain;
+  const k=scalar('lbw'),wt=P[k];
+  const raw=r[0]*wt,mg=Math.min(raw,r[1]);
+  const c=parseFloat($('la-conc').value),mgml=c*10,ml=mg/mgml;
+  const vol=num('la-vol'),plan=vol*mgml;
+  $('la-mg').textContent=fmt(mg,0)+' mg';
+  $('la-rule').textContent=r[0]+' mg/kg × '+W[k]+' '+fmt(wt,1)+' kg'+(raw>r[1]?' ، مقيد بالسقف '+r[1]+' mg':' ، السقف '+r[1]+' mg');
+  $('la-ml').textContent=fmt(ml,1)+' mL';
+  $('la-mgml').textContent=c+'% = '+fmt(mgml,2)+' mg/mL';
+  $('la-plan').textContent=isFinite(plan)?fmt(plan,0)+' mg':'–';
+  const pct=plan/mg*100;
+  $('la-pct').textContent=isFinite(pct)?fmt(pct,0)+'% من الحد الأقصى'+(pct>100?' : يتجاوز الحد':''):'–';
+  $('la-pct').style.color=pct>100?'var(--danger)':'';
+  // lipid (ASRA 2020)
+  const w=P.tbw,L=$('lipid');
+  if(w>70){
+    L.innerHTML='<li>أوقف الحقن، اطلب المساعدة، أمّن المجرى الهوائي بأكسجين 100%، وعالج التشنجات بالبنزوديازبين.</li><li>بلعة <b class="num">100 mL</b> على 2–3 دقائق.</li><li>ثم تسريب <b class="num">200–250 mL</b> على 15–20 دقيقة.</li><li>الحد الأعلى نحو <b class="num">12 mL/kg</b> = <b class="num">'+fmt(12*P.ibw,0)+' mL</b> (على IBW).</li>';
+  }else{
+    L.innerHTML='<li>أوقف الحقن، اطلب المساعدة، أمّن المجرى الهوائي بأكسجين 100%، وعالج التشنجات بالبنزوديازبين.</li><li>بلعة <b class="num">1.5 mL/kg = '+fmt(1.5*w,0)+' mL</b> على 2–3 دقائق.</li><li>ثم تسريب <b class="num">0.25 mL/kg/min = '+fmt(0.25*w*60,0)+' mL/h</b>.</li><li>الحد الأعلى نحو <b class="num">12 mL/kg = '+fmt(12*w,0)+' mL</b>.</li>';
+  }
+  L.insertAdjacentHTML('beforeend','<li>عند توقف القلب: أدرينالين بجرعات صغيرة ≤ 1 mcg/kg، وتجنّب الفازوبرسين وحاصرات الكالسيوم وبيتا والمخدرات الموضعية الأخرى.</li>');
+}
+
+function infInit(){
+  $('i-drug').innerHTML=Object.keys(INF).map(k=>'<option value="'+k+'">'+INF[k].n+'</option>').join('');
+  $('i-drug').value='nor';infPreset();
+}
+function infPreset(){const d=INF[$('i-drug').value];$('i-conc').value=d.conc;$('i-dose').value=d.dose;}
+function inf(){
+  const d=INF[$('i-drug').value],sel=$('i-w').value,k=sel==='auto'?scalar(d.ob):sel,wt=P[k];
+  const conc=num('i-conc'),dose=num('i-dose'),m=d.per==='min'?60:1;
+  const rate=dose*wt*m/conc;
+  const unit=d.du+'/kg/'+d.per;
+  $('i-rate').textContent=fmt(rate,1)+' mL/h';
+  $('i-units').textContent=dose+' '+unit+' ، التركيز '+conc+' '+d.cu+'/mL';
+  $('i-range').textContent=d.lo+' – '+d.hi;
+  $('i-rrate').textContent=unit+' = '+fmt(d.lo*wt*m/conc,1)+' – '+fmt(d.hi*wt*m/conc,1)+' mL/h';
+  $('i-prep').textContent=d.prep;
+  $('i-wused').textContent='الوزن: '+W[k]+' '+fmt(wt,1)+' kg';
+  document.querySelector('label[for="i-conc"]').firstChild.nodeValue='التركيز ('+d.cu+'/mL)';
+  document.querySelector('label[for="i-dose"]').firstChild.nodeValue='الجرعة ('+unit+')';
+}
+
+// ---------- Pre-op ----------
+const ASA=[
+ ['I','سليم','لا أمراض، لا يدخن، لا يشرب أو بحد أدنى.'],
+ ['II','مرض جهازي خفيف','مدخن، حامل، BMI بين 30 و40، سكري أو ضغط منضبط، مرض رئوي خفيف.'],
+ ['III','مرض جهازي شديد','سكري أو ضغط غير منضبط، COPD، BMI ≥ 40، التهاب كبد نشط، غسيل كلوي منتظم، احتشاء أو جلطة دماغية قبل أكثر من 3 أشهر، انخفاض متوسط في EF.'],
+ ['IV','مرض شديد يهدد الحياة باستمرار','احتشاء أو جلطة أو دعامة خلال 3 أشهر، نقص تروية مستمر، مرض صمامي شديد، انخفاض شديد في EF، إنتان، DIC.'],
+ ['V','محتضر لن ينجو دون العملية','تمزق أم الدم البطنية، رضوض شديدة، نزف داخل الجمجمة مع تأثير كتلي.'],
+ ['VI','متوفى دماغياً','متبرع بالأعضاء.']
+];
+const RCRI=['جراحة عالية الخطورة (داخل البطن أو الصدر أو وعائية فوق الإربية)','مرض قلبي إقفاري','فشل قلب','مرض وعائي دماغي (جلطة أو نوبة إقفارية عابرة)','سكري معالج بالإنسولين','كرياتينين قبل العملية > 2 mg/dL (177 µmol/L)'];
+const RCRI_RISK=['3.9%','6.0%','10.1%','15.0%'];
+const SB=[['s','شخير عالٍ'],['t','تعب أو نعاس نهاري'],['o','توقف التنفس أثناء النوم لاحظه أحد'],['p','ارتفاع ضغط الدم أو يعالج منه'],['b','BMI > 35',1],['a','العمر > 50',1],['n','محيط الرقبة > 40 cm'],['g','ذكر',1]];
+const APF=[['f','أنثى',1],['ns','غير مدخن'],['h','سوابق غثيان بعد العمليات أو دوار الحركة'],['op','أفيونات متوقعة بعد العملية']];
+const APF_RISK=['10%','21%','39%','61%','79%'];
+function preopInit(){
+  $('asa-opts').innerHTML=ASA.map((a,i)=>'<label class="opt"><input type="radio" name="asa" id="asa-'+i+'" value="'+a[0]+'"'+(i===2?' checked':'')+'><b>ASA '+a[0]+': '+a[1]+'</b><span>'+a[2]+'</span></label>').join('');
+  $('rcri-list').innerHTML=RCRI.map((r,i)=>'<label class="chk"><input type="checkbox" id="rc-'+i+'">'+r+'</label>').join('');
+  $('sb-list').innerHTML=SB.map(r=>'<label class="chk"><input type="checkbox" id="sb-'+r[0]+'"'+(r[2]?' disabled':'')+'>'+r[1]+(r[2]?' <small class="cmt">(من بيانات المريض)</small>':'')+'</label>').join('');
+  $('apf-list').innerHTML=APF.map(r=>'<label class="chk"><input type="checkbox" id="ap-'+r[0]+'"'+(r[2]?' disabled':'')+'>'+r[1]+(r[2]?' <small class="cmt">(من بيانات المريض)</small>':'')+'</label>').join('');
+  $('view-preop').addEventListener('input',preop);
+  $('copy').addEventListener('click',()=>{const t=$('summary').textContent;const b=$('copy');
+    const done=()=>{b.textContent='تم النسخ';setTimeout(()=>b.textContent='نسخ الملخص',1500)};
+    const sel=()=>{const r=document.createRange();r.selectNodeContents($('summary'));const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='حدد النص وانسخه'};
+    try{navigator.clipboard.writeText(t).then(done,sel)}catch(e){sel()}});
+}
+function preop(){
+  $('sb-b').checked=P.bmi>35;$('sb-a').checked=P.age>50;$('sb-g').checked=P.sex==='m';$('ap-f').checked=P.sex==='f';
+  const asaEl=document.querySelector('input[name=asa]:checked'),asa=(asaEl?asaEl.value:'')+($('asa-e').checked?'E':'');
+  const rc=RCRI.filter((_,i)=>$('rc-'+i).checked).length;
+  $('rcri-out').textContent=rc+' / 6';
+  $('rcri-txt').textContent='خطر الوفاة أو الاحتشاء أو توقف القلب خلال 30 يوماً نحو '+RCRI_RISK[Math.min(rc,3)]+' (Duceppe, CCS 2017).'+(rc>=1||P.age>=65?' يُنصح بقياس BNP أو NT-proBNP إن توفر، وتخطيط القلب.':'');
+  const sb=SB.filter(r=>$('sb-'+r[0]).checked).length;
+  const sbr=sb<=2?'منخفض':sb<=4?'متوسط':'مرتفع';
+  $('sb-out').textContent=sb+' / 8';
+  $('sb-txt').textContent='خطر انقطاع النفس الانسدادي '+sbr+'.'+(sb>=5?' توقع صعوبة التهوية بالقناع، قلّل الأفيونات، فضّل التخدير الناحي، وراقب التشبع بعد العملية.':'');
+  const ap=APF.filter(r=>$('ap-'+r[0]).checked).length;
+  $('apf-out').textContent=ap+' / 4';
+  $('apf-txt').textContent='الخطر المتوقع نحو '+APF_RISK[ap]+'. '+(ap<=1?'وقاية بدواء واحد أو حسب البروتوكول.':ap===2?'وقاية بدواءين (مثل ديكساميثازون 4–8 mg وأوندانسيترون 4 mg).':'وقاية بثلاثة أدوية أو أكثر، وفكّر في TIVA بالبروبوفول وتقليل الأفيونات.');
+  const s='Age '+P.age+' '+(P.sex==='m'?'M':'F')+', Ht '+P.h+' cm, Wt '+fmt(P.tbw,1)+' kg, BMI '+fmt(P.bmi,1)
+   +'\nIBW '+fmt(P.ibw,1)+' kg, LBW '+fmt(P.lbw,1)+' kg, ABW '+fmt(P.abw,1)+' kg'
+   +'\nASA '+asa
+   +'\nRCRI '+rc+'/6 (30-day MACE ~'+RCRI_RISK[Math.min(rc,3)]+')'
+   +'\nSTOP-BANG '+sb+'/8 ('+(sb<=2?'low':sb<=4?'intermediate':'high')+' OSA risk)'
+   +'\nApfel '+ap+'/4 (PONV ~'+APF_RISK[ap]+')'
+   +'\nFunctional capacity >=4 METs: '+($('mets').checked?'yes':'no / unknown');
+  $('summary').textContent=s;
+}
+// ---------- Crisis cards ----------
+const D=(x,u,d)=>'<span class="dose">'+fmt(x,d)+' '+u+'</span>';
+function cards(){
+  const t=P.tbw,l=P.obese?P.lbw:t;
+  const dant=2.5*t,vials=Math.ceil(dant/20);
+  const C=[
+   {h:'فرط الحرارة الخبيث',s:'MH',src:'MHAUS، AAGBI 2020',o:[
+     'أوقف الغازات المخدرة والسكسينيل كولين فوراً. أعلن الأزمة واطلب صندوق MH.',
+     'أكسجين 100% بتدفق عالٍ (10 L/min أو أكثر) وفرط تهوية لخفض EtCO₂. حوّل إلى TIVA بالبروبوفول.',
+     'دانترولين 2.5 mg/kg = '+D(dant,'mg',0)+' ، أي نحو '+D(vials,'قارورة',0)+' (Dantrium 20 mg، كل قارورة تُذاب في 60 mL ماء معقم). كرر 1 mg/kg كل 5–10 دقائق حتى يستقر، وقد يلزم أكثر من 10 mg/kg.',
+     'التبريد: سوائل باردة، ثلج على الإبطين والفخذين. أوقف التبريد عند 38.5 °C.',
+     'فرط البوتاسيوم: كلوريد الكالسيوم 10% بجرعة '+D(10,'mL',0)+' ، إنسولين 10 وحدات مع 50 mL دكستروز 50%. تجنّب حاصرات الكالسيوم مع الدانترولين.',
+     'أرسل غازات الدم، K، CK، الميوغلوبين، والتخثر. حافظ على البول > 2 mL/kg/h = '+D(2*t,'mL/h',0)+'.',
+     'في السودان: تأكد مسبقاً من توفر الدانترولين في المستشفى وعدد قواريره، لأن الجرعة الأولى وحدها تحتاج '+vials+' قارورة لهذا المريض.']},
+   {h:'التأق (Anaphylaxis)',s:'NAP6',src:'AAGBI 2021 وNAP6',o:[
+     'أوقف الدواء المشتبه (مضادات حيوية، مرخيات، كلورهيكسيدين، لاتكس). أكسجين 100%، ارفع الساقين.',
+     'أدرينالين وريدي '+D(50,'mcg',0)+' (0.5 mL من 1:10,000) يُكرر حسب الاستجابة. ابدأ تسريباً إذا احتجت أكثر من 3 جرعات.',
+     'بدون وريد: أدرينالين عضلي '+D(0.5,'mg',1)+' (0.5 mL من 1:1,000) في الفخذ.',
+     'سوائل بلورية 20 mL/kg = '+D(20*t,'mL',0)+' بسرعة، وكرر حسب الحاجة.',
+     'عند توقف القلب: إنعاش قلبي رئوي وأدرينالين 1 mg كل 3–5 دقائق.',
+     'بعد الاستقرار: هيدروكورتيزون 200 mg وريدي، ومضاد هيستامين (كلورفينيرامين 10 mg).',
+     'التريبتاز: عينة فور الاستقرار، ثم بعد 1–2 ساعة، ثم بعد 24 ساعة. أحِل المريض لعيادة الحساسية.']},
+   {h:'تسمم المخدر الموضعي',s:'LAST',src:'ASRA 2020',o:[
+     'أوقف الحقن. أكسجين 100%، تهوية جيدة، والتشنجات تُعالج بالبنزوديازبين (ميدازولام 1–2 mg) أو بروبوفول بجرعة صغيرة.',
+     t>70?'مستحلب الدهون 20%: بلعة '+D(100,'mL',0)+' على 2–3 دقائق، ثم '+D(225,'mL',0)+' تقريباً على 15–20 دقيقة.':'مستحلب الدهون 20%: بلعة '+D(1.5*t,'mL',0)+' (1.5 mL/kg) ثم تسريب '+D(0.25*t*60,'mL/h',0)+' (0.25 mL/kg/min).',
+     'إذا بقي غير مستقر: كرر البلعة وضاعف التسريب. الحد الأعلى نحو 12 mL/kg.',
+     'أدرينالين بجرعات صغيرة ≤ 1 mcg/kg = '+D(l,'mcg',0)+'. تجنّب الفازوبرسين وحاصرات الكالسيوم وبيتا والمخدرات الموضعية الأخرى.',
+     'البروبوفول ليس بديلاً عن مستحلب الدهون. أنعش لفترة طويلة، فالتعافي قد يتأخر أكثر من ساعة.']},
+   {h:'لا تنبيب ولا أكسجة',s:'CICO',src:'DAS 2015',o:[
+     'أعلن بصوت واضح: «لا نستطيع التنبيب ولا الأكسجة». أكسجين 100% عبر المجرى العلوي باستمرار.',
+     'تأكد من الإرخاء العضلي الكامل: روكورونيوم '+D(1.2*(P.obese?P.ibw:t),'mg',0)+' أو سكسينيل كولين '+D(1.5*t,'mg',0)+'.',
+     'مدّ الرقبة، وحدد الغشاء الحلقي الدرقي بالمصافحة الحنجرية (laryngeal handshake).',
+     'مشرط رقم 10: شق عرضي عبر الغشاء، أدر النصل 90° بحيث تتجه الحافة الحادة نحو القدمين.',
+     'أدخل البوجي بمحاذاة النصل في الرغامى، ثم أنبوب مكفف 6.0 فوق البوجي. نفّخ الكفة وأكّد بقياس CO₂.',
+     'إذا لم تُجس الحنجرة: شق عمودي 8–10 cm ثم تشريح كليل حتى تجد الحنجرة.']},
+   {h:'التشنج الحنجري',s:'Laryngospasm',src:'المراجع القياسية',o:[
+     'أوقف المنبه، نظّف البلعوم، ضغط إيجابي مستمر بأكسجين 100% مع رفع الفك والضغط على نقطة لارسون.',
+     'عمّق التخدير: بروبوفول 0.5–1 mg/kg = '+D(0.5*l,'mg',0)+' – '+D(l,'mg',0)+'.',
+     'إذا استمر: سكسينيل كولين 0.1–0.5 mg/kg = '+D(0.1*t,'mg',0)+' – '+D(0.5*t,'mg',0)+' ، أو 1 mg/kg = '+D(t,'mg',0)+' للتنبيب.',
+     'بدون وريد: سكسينيل كولين عضلي 4 mg/kg = '+D(Math.min(4*t,150),'mg',0)+' (الحد 150 mg)، مع أتروبين.',
+     'راقب الوذمة الرئوية بالضغط السلبي بعد زوال التشنج.']},
+   {h:'التشنج القصبي',s:'Bronchospasm',src:'المراجع القياسية',o:[
+     'استبعد أولاً: انسداد الأنبوب، التنبيب داخل القصبة، الاسترواح، والتأق.',
+     'أكسجين 100% وعمّق التخدير بالسيفوفلوران. أطل زمن الزفير وقلّل سرعة التنفس.',
+     'سالبوتامول بالبخاخ عبر وصلة الأنبوب 6–10 بخات، وكرر.',
+     'كيتامين 0.5–1 mg/kg = '+D(0.5*l,'mg',0)+' – '+D(l,'mg',0)+'.',
+     'سلفات المغنيسيوم 2 g وريدي على 20 دقيقة. هيدروكورتيزون 200 mg.',
+     'إذا كان شديداً: أدرينالين وريدي 10–50 mcg بجرعات متدرجة.']},
+   {h:'النزف الشديد',s:'Major haemorrhage',src:'ESAIC 2023، CRASH-2/WOMAN',o:[
+     'فعّل بروتوكول النزف الشديد، وركّب خطين وريديين واسعين، واطلب الدم فوراً.',
+     'حمض الترانيكساميك '+D(1,'g',0)+' على 10 دقائق ثم 1 g على 8 ساعات (خلال 3 ساعات من الإصابة أو الولادة).',
+     'أعطِ الدم بنسبة قريبة من 1:1:1 (كريات حمراء : بلازما : صفائح).',
+     'الأهداف: الكالسيوم المتأين > 1.1 mmol/L (كلوريد الكالسيوم 10% بجرعة 10 mL)، الحرارة > 36 °C، الفيبرينوجين > 1.5–2 g/L (في الولادة > 2 g/L)، pH > 7.2.',
+     'الإصابات: خفض ضغط مقصود (انقباضي 80–90 mmHg) حتى السيطرة على النزف، ما عدا إصابات الرأس.']},
+   {h:'التخدير النصفي العالي أو الكلي',s:'High spinal',src:'OAA وDAS',o:[
+     'أوقف أي حقن إضافي. طمئن المريض، وأكسجين 100%. إن كانت حاملاً: أزح الرحم لليسار.',
+     'الانخفاض في الضغط: فينيليفرين '+D(100,'mcg',0)+' أو إيفيدرين '+D(6,'mg',0)+' ، وأدرينالين '+D(10,'mcg',0)+' – '+D(100,'mcg',0)+' إذا لزم.',
+     'بطء القلب: أتروبين '+D(0.6,'mg',1)+' ، وكرر.',
+     'ضعف التنفس أو فقدان الوعي: تنبيب بتحريض سريع مع تخدير وتهدئة حتى زوال الإحصار.',
+     'عند توقف القلب: إنعاش، وفي الحامل تُجرى الولادة القيصرية الطارئة خلال 5 دقائق.']}
+  ];
+  const open=[...document.querySelectorAll('details.card[open]')].map(d=>d.dataset.k);
+  $('cards').innerHTML=C.map((c,i)=>'<details class="card" data-k="'+i+'"'+(open.includes(String(i))?' open':'')+'><summary><span>'+c.h+'</span><small dir="ltr">'+c.s+'</small></summary><ol>'+c.o.map(x=>'<li>'+x+'</li>').join('')+'</ol><div class="src">المرجع: '+c.src+'</div></details>').join('');
+}
+// ---------- Routing ----------
+function route(){
+  const v=['doses','preop','crisis'].includes(location.hash.slice(1))?location.hash.slice(1):'doses';
+  document.querySelectorAll('[data-view]').forEach(e=>e.hidden=e.dataset.view!==v);
+  document.querySelectorAll('[data-tab]').forEach(a=>a.setAttribute('aria-selected',a.dataset.tab===v));
+}
+window.addEventListener('hashchange',()=>{route();if(innerWidth<=640)scrollTo(0,0)});
+function all(){weights();rows(IND,'t-ind');rows(NMB,'t-nmb');la();inf();preop();cards();}
+laInit();infInit();preopInit();route();
+['age','sex','ht','wt','asa-e','mets','la-epi','la-conc','la-vol','i-conc','i-dose','i-w'].forEach(id=>$(id).addEventListener('input',all));
+$('la-drug').addEventListener('input',()=>{laConc();all();});
+$('i-drug').addEventListener('input',()=>{infPreset();all();});
+all();
+window.__calc={get P(){return P}};
+})();
+</script>
+
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
+</body>
+</html>
