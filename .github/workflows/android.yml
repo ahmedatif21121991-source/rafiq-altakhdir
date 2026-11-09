@@ -60,5 +60,7 @@ jobs:
           tag_name: v${{ github.run_number }}
           name: رفيق التخدير v${{ github.run_number }}
           body: ملف APK للتثبيت على أندرويد. أداة مساعدة للقرار ولا تغني عن الحكم السريري.
-          files: rafiq-altakhdir.apk
+          files: |
+            rafiq-altakhdir.apk
+            rafiq-altakhdir.mobileconfig
           make_latest: true
