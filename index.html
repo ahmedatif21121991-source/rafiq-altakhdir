@@ -103,7 +103,7 @@ tr:last-child td{border-bottom:0}
   td:nth-child(2),td:nth-child(3){grid-column:auto;font-size:.82rem}
   td:nth-child(5){grid-column:1/-1}
 }
-.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px}
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px}
 .tabs a{text-align:center;padding:10px 6px;border-radius:7px;color:var(--muted);text-decoration:none;font-weight:600;font-family:var(--f-display);font-size:.95rem}
 .tabs a{display:flex;flex-direction:column;align-items:center;gap:2px}
 .tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -142,6 +142,20 @@ details.card ol{margin:0;padding:12px 16px 14px;padding-inline-start:34px;displa
 .ios-tip{position:relative;background:var(--accent-soft);color:var(--fg);border:1px solid var(--accent);border-radius:10px;padding:12px 14px 12px 40px;font-size:.9rem}
 .ios-tip svg{width:18px;height:18px;vertical-align:-3px;fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ios-tip button{position:absolute;top:6px;left:6px;background:transparent;color:var(--muted);font-size:1.3rem;padding:2px 8px}
+.aw-list{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:6px;font-size:.92rem}
+.plans{display:flex;flex-direction:column;gap:12px}
+.plan{background:var(--panel);border:1px solid var(--line);border-inline-start:5px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;opacity:.55}
+.plan.active{opacity:1;border-inline-start-color:var(--accent);box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.plan.done{opacity:.8;border-inline-start-color:var(--accent)}
+.plan.plan-d.active{border-inline-start-color:var(--danger)}
+.plan h3{margin:0;font-family:var(--f-display);font-size:1.02rem;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.plan h3 small{font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:.8rem}
+.plan ol,.plan ul{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:5px;font-size:.92rem}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.acts .cnt{font-family:var(--f-num);font-weight:600;color:var(--accent)}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+button.warn{background:var(--danger)}
+.outcome{font-weight:600;color:var(--accent)}
 footer{color:var(--muted);font-size:.82rem;display:flex;flex-direction:column;gap:6px}
 footer ul{margin:0;padding-inline-start:18px}
 footer a{color:var(--accent)}
@@ -182,6 +196,7 @@ footer a{color:var(--accent)}
 <nav class="tabs" role="tablist" aria-label="أقسام التطبيق">
   <a href="#crisis" role="tab" data-tab="crisis"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></svg><span>الطوارئ</span></a>
   <a href="#doses" role="tab" data-tab="doses"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 2 4 4M17 7l3-3M19 9 9 19l-4 1 1-4L16 6l3 3zM14 8l2 2M11 11l2 2"/></svg><span>الجرعات</span></a>
+  <a href="#airway" role="tab" data-tab="airway"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v7M9 9c-3 0-5 3-5 7v4h3l2-5M15 9c3 0 5 3 5 7v4h-3l-2-5M12 9v6"/></svg><span>المجرى</span></a>
   <a href="#preop" role="tab" data-tab="preop"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h3"/></svg><span>قبل التخدير</span></a>
 </nav>
 
@@ -276,6 +291,16 @@ footer a{color:var(--accent)}
 <div class="cards" id="cards"></div>
 </div>
 
+<div data-view="airway" class="view" hidden>
+<section class="panel" aria-labelledby="aw-prep">
+  <div class="panel-head"><h2 id="aw-prep">قبل التحريض</h2><small>DAS 2015</small></div>
+  <ul class="aw-list" id="aw-prep-list"></ul>
+</section>
+<div class="plans" id="plans"></div>
+<p class="cmt" style="margin:0">أعلن الفشل بصوت واضح في نهاية كل خطة قبل الانتقال للتالية. الأكسجة هي الأولوية في كل مرحلة، وأكّد وضع الأنبوب بموجة ثاني أكسيد الكربون.</p>
+<button type="button" id="aw-reset" class="ghost">بدء حالة جديدة</button>
+</div>
+
 <footer>
   <div>المراجع المعتمدة في القيم (يُرجى التحقق من الإصدار الأحدث ومن نشرة الدواء المحلية):</div>
   <ul>
@@ -285,8 +310,9 @@ footer a{color:var(--accent)}
     <li>Devine (1974) لـ IBW، وJanmahasatian (2005) لـ LBW.</li>
     <li>ASA Physical Status Classification (2020)، وDuceppe وآخرون CCS 2017 لـ RCRI، وChung لـ STOP-BANG، وApfel (1999) للغثيان.</li>
     <li>بطاقات الطوارئ: MHAUS، AAGBI/NAP6، ASRA 2020، Difficult Airway Society 2015، ESAIC 2023.</li>
+    <li>المجرى الهوائي: Frerk C et al. Difficult Airway Society 2015 guidelines, Br J Anaesth 2015;115:827–48 (النص الكامل). صدرت إرشادات DAS 2025 (Br J Anaesth 2026;136:283–307) بنفس الخطط A–D مع تركيز على النجاح من أول محاولة والأكسجة المستمرة؛ سيُحدَّث القسم بتفاصيلها عند مراجعة نصها الكامل.</li>
   </ul>
-  <div>الإصدار 2 (6 نوفمبر 2026): أُضيف التقييم قبل التخدير وبطاقات الطوارئ. الأقسام القادمة: المجرى الهوائي الصعب، الصيام ومضادات التخثر.</div>
+  <div>الإصدار 3 (20 نوفمبر 2026): أُضيف قسم المجرى الهوائي الصعب (الخطط A–D). القادم: الصيام ومضادات التخثر.</div>
   <ul hidden>
   </ul>
 </footer>
@@ -545,15 +571,83 @@ function cards(){
   const open=[...document.querySelectorAll('details.card[open]')].map(d=>d.dataset.k);
   $('cards').innerHTML=C.map((c,i)=>'<details class="card" data-k="'+i+'"'+(open.includes(String(i))?' open':'')+'><summary><span>'+c.h+'</span><small dir="ltr">'+c.s+'</small></summary><ol>'+c.o.map(x=>'<li>'+x+'</li>').join('')+'</ol><div class="src">المرجع: '+c.src+'</div></details>').join('');
 }
+
+// ---------- Difficult airway (DAS 2015) ----------
+let AW={plan:'A',a:0,b:0,out:{}};
+const AW_PLANS=[
+ {k:'A',t:'الخطة A: التنبيب',s:'تهوية بالقناع والتنبيب',max:3,items:[
+   'الأكسجة هي الأولوية. ابدأ التهوية بالقناع بأكسجين 100% فور التحريض.',
+   'تأكد من إرخاء عضلي كامل قبل أي محاولة إضافية.',
+   'أقصى عدد 3 محاولات تنظير، والرابعة فقط لزميل أكثر خبرة (3+1).',
+   'في التحريض السريع: إذا صعب التنبيب، ارفع الضغط على الغضروف الحلقي.',
+   'لا تُدخل البوجي بشكل أعمى إذا كانت الرؤية من الدرجة 3b أو 4.',
+   'الفيديو لارنغوسكوب يحسّن الرؤية، ويجب أن يكون متاحاً فوراً.'],
+  fail:'فشل التنبيب: أعلنه وانتقل للخطة B'},
+ {k:'B',t:'الخطة B: جهاز فوق المزمار (SAD)',s:'الحفاظ على الأكسجة',max:3,items:[
+   'أقصى 3 محاولات: اثنتان بجهاز الجيل الثاني المفضّل، وواحدة بجهاز بديل. تغيير المقاس يُحسب محاولة.',
+   'في التحريض السريع: ارفع الضغط على الغضروف الحلقي لتسهيل الإدخال.'],
+  ok:'نجحت الأكسجة عبر SAD: توقّف وفكّر',
+  fail:'فشلت الأكسجة عبر SAD: انتقل للخطة C'},
+ {k:'C',t:'الخطة C: التهوية بالقناع',s:'الملاذ الأخير قبل الرقبة',items:[
+   'إذا نجحت التهوية بالقناع: حافظ على الأكسجة وأيقظ المريض، إلا في ظروف استثنائية.',
+   'إذا فشلت: تأكد من الإرخاء العضلي الكامل قبل حدوث نقص أكسجة حرج، فهي فرصة أخيرة لإنقاذ المجرى دون الخطة D.'],
+  ok:'نجحت التهوية بالقناع: أيقظ المريض',
+  fail:'لا تنبيب ولا أكسجة: أعلن CICO وابدأ الخطة D'},
+ {k:'D',t:'الخطة D: فتح الرقبة الطارئ (eFONA)',s:'مشرط، بوجي، أنبوب',items:[]}
+];
+function awPrep(){
+  const t=P.tbw, r=P.obese?P.ibw:t;
+  $('aw-prep-list').innerHTML=[
+   'الأكسجة المسبقة بوضع رأس مرفوع 20–25° حتى يصل الأكسجين في هواء الزفير (EtO₂) إلى 0.87–0.9.',
+   P.obese?'المريض بدين: استخدم وضعية الـ«Ramped» بشكل روتيني.':'عند السمنة استخدم وضعية الـ«Ramped» بشكل روتيني.',
+   'للمرضى عاليي الخطورة: أكسجين عبر القنية الأنفية حتى 15 L/min أثناء انقطاع التنفس، أو أكسجين أنفي عالي التدفق حتى 70 L/min.',
+   'روكورونيوم 1.2 mg/kg = <span class="dose">'+fmt(1.2*r,0)+' mg</span> للتحريض السريع.',
+   'إذا كان السوغامادكس جزءاً من خطة الفشل: جهّز الجرعة الكاملة 16 mg/kg = <span class="dose">'+fmt(16*t,0)+' mg</span> فوراً. وهو لا يضمن مجرى هوائياً سالكاً.',
+   'جهّز الفيديو لارنغوسكوب، البوجي، جهاز SAD من الجيل الثاني، ومجموعة فتح الرقبة (مشرط رقم 10، بوجي، أنبوب 6.0 مكفف).'
+  ].map(x=>'<li>'+x+'</li>').join('');
+}
+function awRender(){
+  const order=['A','B','C','D'],cur=order.indexOf(AW.plan);
+  $('plans').innerHTML=AW_PLANS.map((p,i)=>{
+    const st=i<cur?'done':i===cur?'active':'';
+    let body=p.items.length?'<ul>'+p.items.map(x=>'<li>'+x+'</li>').join('')+'</ul>':'';
+    if(p.k==='D'){
+      body='<ol><li>أكسجين 100% على المجرى العلوي باستمرار (SAD أو قناع محكم أو أنفي). تأكد من إرخاء عضلي كامل.</li><li>مدّ الرقبة، وحدد الغشاء الحلقي الدرقي بالمصافحة الحنجرية (laryngeal handshake).</li><li>غشاء محسوس: مشرط رقم 10 بشفرة عريضة، شق عرضي، أدر النصل (stab, twist).</li><li>أدخل البوجي ذا الطرف المنحني بمحاذاة النصل في الرغامى، وتقدّم بلطف حتى 10–15 cm.</li><li>مرّر أنبوباً مكففاً مُزلَّقاً مقاس 6.0 mm فوق البوجي، نفّخ الكفة، وأكّد بموجة CO₂.</li><li>غشاء غير محسوس: شق عمودي ثم تشريح كليل بالإصبع، ثم بوجي وأنبوب (scalpel–finger–bougie).</li><li>الموجات فوق الصوتية قد تساعد في تحديد المعالم لكن لا تؤخر الوصول للمجرى.</li></ol>';
+    }
+    if(p.k==='B'&&AW.out.B==='ok'){
+      body+='<div class="outcome">توقّف وفكّر. أربعة خيارات:</div><ol><li>أيقظ المريض (الخيار الأول إذا لم تكن الجراحة عاجلة).</li><li>التنبيب عبر SAD بالمنظار الليفي، فقط إذا كانت الحالة مستقرة والأكسجة ممكنة وأنت مدرَّب.</li><li>أكمل الجراحة عبر SAD.</li><li>نادراً: فغر الرغامى أو بضع الغشاء الحلقي الدرقي.</li></ol>';
+    }
+    if(p.k==='C'&&AW.out.C==='ok') body+='<div class="outcome">حافظ على الأكسجة وأيقظ المريض.</div>';
+    if(p.k==='A'&&AW.out.A==='ok') body+='<div class="outcome">تم التنبيب. أكّد بموجة CO₂.</div>';
+    let acts='';
+    if(i===cur&&!AW.out[p.k]&&p.k!=='D'){
+      const cnt=p.max?'<span class="cnt">المحاولة '+(p.k==='A'?AW.a:AW.b)+' / '+p.max+(p.k==='A'?' (+1)':'')+'</span>':'';
+      const tries=p.max?'<button type="button" class="ghost" data-aw="try">سجّل محاولة</button>':'';
+      acts='<div class="acts">'+cnt+tries+'<button type="button" data-aw="ok">نجحت</button><button type="button" class="warn" data-aw="fail">'+p.fail+'</button></div>';
+    }
+    return '<section class="plan '+st+(p.k==='D'?' plan-d':'')+'"><h3>'+p.t+'<small>'+p.s+'</small></h3>'+body+acts+'</section>';
+  }).join('');
+}
+function awInit(){
+  $('plans').addEventListener('click',e=>{
+    const b=e.target.closest('[data-aw]');if(!b)return;const a=b.dataset.aw,k=AW.plan,order=['A','B','C','D'];
+    if(a==='try'){if(k==='A')AW.a=Math.min(AW.a+1,4);else AW.b=Math.min(AW.b+1,3);}
+    if(a==='ok')AW.out[k]='ok';
+    if(a==='fail'){AW.out[k]='fail';AW.plan=order[order.indexOf(k)+1];}
+    awRender();
+  });
+  $('aw-reset').addEventListener('click',()=>{AW={plan:'A',a:0,b:0,out:{}};awRender();scrollTo(0,0);});
+  awRender();
+}
 // ---------- Routing ----------
 function route(){
-  const v=['doses','preop','crisis'].includes(location.hash.slice(1))?location.hash.slice(1):'doses';
+  const v=['doses','preop','crisis','airway'].includes(location.hash.slice(1))?location.hash.slice(1):'doses';
   document.querySelectorAll('[data-view]').forEach(e=>e.hidden=e.dataset.view!==v);
   document.querySelectorAll('[data-tab]').forEach(a=>a.setAttribute('aria-selected',a.dataset.tab===v));
 }
 window.addEventListener('hashchange',()=>{route();if(innerWidth<=640)scrollTo(0,0)});
-function all(){weights();rows(IND,'t-ind');rows(NMB,'t-nmb');la();inf();preop();cards();}
-laInit();infInit();preopInit();route();
+function all(){weights();rows(IND,'t-ind');rows(NMB,'t-nmb');la();inf();preop();cards();awPrep();}
+laInit();infInit();preopInit();awInit();route();
 ['age','sex','ht','wt','asa-e','mets','la-epi','la-conc','la-vol','i-conc','i-dose','i-w'].forEach(id=>$(id).addEventListener('input',all));
 $('la-drug').addEventListener('input',()=>{laConc();all();});
 $('i-drug').addEventListener('input',()=>{infPreset();all();});
